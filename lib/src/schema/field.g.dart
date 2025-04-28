@@ -14,6 +14,7 @@ Field _$FieldFromJson(Map<String, dynamic> json) => Field(
       max: jsonValueParseToInt(json['max']),
       onlyInt: json['onlyInt'] as bool?,
       required: json['required'] as bool?,
+      collectionId: json['collectionId'] as String?,
       id: json['id'] as String?,
       values:
           (json['values'] as List<dynamic>?)?.map((e) => e as String).toList(),
@@ -25,6 +26,7 @@ Field _$FieldFromJson(Map<String, dynamic> json) => Field(
 Map<String, dynamic> _$FieldToJson(Field instance) => <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
+      'collectionId': instance.collectionId,
       'type': _$FieldTypeEnumMap[instance.type]!,
       'required': instance.required,
       'maxSelect': instance.maxSelect,

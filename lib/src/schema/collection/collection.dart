@@ -2,6 +2,7 @@ import 'package:code_builder/code_builder.dart' as code_builder;
 import 'package:collection/collection.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:pocketbase_utils/src/generator/generator_context.dart';
 import 'package:pocketbase_utils/src/schema/field.dart';
 import 'package:pocketbase_utils/src/templates/do_not_modify_by_hand.dart';
 import 'package:pocketbase_utils/src/utils/code_builder.dart';
@@ -14,6 +15,7 @@ part 'constructors/from_record_model.dart';
 part 'methods/copy_with.dart';
 part 'methods/for_create_request.dart';
 part 'methods/props.dart';
+part 'methods/record_model_to_map.dart';
 part 'methods/take_diff.dart';
 part 'methods/to_json.dart';
 
@@ -48,7 +50,15 @@ final class Collection {
 
   Map<String, dynamic> toJson() => _$CollectionToJson(this);
 
-  String generateClassCode(String fileName, int lineLength) {
+  static String generateClassName(String name) {
+    return '${ReCase(name).pascalCase}Record';
+  }
+
+  static String generateFileName(String name) {
+    return '${ReCase(name).snakeCase}_record';
+  }
+
+  String generateClassCode(String fileName, int lineLength, GeneratorContext context) {
     final code_builder.Reference? extend;
     final superFields = <Field>[];
     final fieldsWithoutSuperFieldsAndHidden = fields.whereNot((f) => f.hidden).toList();
@@ -71,7 +81,7 @@ final class Collection {
 
     final allFieldsWithoutHidden = [...superFieldsWithoutHidden, ...fieldsWithoutSuperFieldsAndHidden].toList();
 
-    final className = '${ReCase(name).pascalCase}Record';
+    final className = generateClassName(name);
 
     final enumFieldsCode = code_builder.Enum(
       (e) => e
@@ -159,7 +169,7 @@ final class Collection {
         ..fields.addAll([
           for (var field in fieldsWithoutSuperFieldsAndHidden) ...[
             field.toCodeBuilder(className),
-            ...field.additionalFieldOptionsAsFields(),
+            ...field.additionalFieldOptionsAsFields(context),
           ],
           for (var staticCollectionRefFieldName in ['collectionId', 'collectionName'])
             code_builder.Field(
@@ -177,12 +187,13 @@ final class Collection {
             ),
         ])
         ..constructors.addAll([
-          _defaultConstructor(superFieldsWithoutHidden, fieldsWithoutSuperFieldsAndHidden),
+          _defaultConstructor(superFieldsWithoutHidden, fieldsWithoutSuperFieldsAndHidden, context),
           _fromJsonConstructor(className),
-          _fromRecordModelConstructor(className),
+          _fromRecordModelConstructor(className, fieldsWithoutSuperFieldsAndHidden, context),
         ])
         ..methods.addAll([
           _toJsonMethod(className),
+          _recordModelToMapMethod(className, fieldsWithoutSuperFieldsAndHidden, context),
           _copyWithMethod(className, allFieldsWithoutHidden),
           _takeDiffMethod(className, allFieldsWithoutHidden),
           _propsMethod(fieldsWithoutSuperFieldsAndHidden),
@@ -206,6 +217,8 @@ final class Collection {
           code_builder.Directive.import('date_time_json_methods.dart'),
           code_builder.Directive.import('geo_point_class.dart'),
           code_builder.Directive.import('package:json_annotation/json_annotation.dart'),
+          // Imports from fields
+          for (var field in allFieldsWithoutHidden) ...field.toImportDirective(context),
         ]),
     );
 

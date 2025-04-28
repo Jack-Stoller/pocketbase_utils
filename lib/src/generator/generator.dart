@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
+import 'package:pocketbase_utils/src/generator/generator_context.dart';
 import 'package:pocketbase_utils/src/schema/collection/collection.dart';
 import 'package:pocketbase_utils/src/templates/auth_record.dart';
 import 'package:pocketbase_utils/src/templates/base_record.dart';
@@ -18,6 +19,7 @@ const _defaultPbSchemaPath = 'pb_schema.json';
 const _defaultOutputDir = 'lib/generated/pocketbase';
 const _defaultLineLength = 80;
 const _defaultGenerateSystemCollections = false;
+const _defaultGenerateRelationExpansions = false;
 
 /// The generator of models files.
 class Generator {
@@ -25,6 +27,7 @@ class Generator {
   late String _outputDir;
   late int _lineLength;
   late bool _generateSystemCollections;
+  late bool _generateRelationExpansions;
 
   /// Creates a new generator with configuration from the 'pubspec.yaml' file.
   Generator() {
@@ -47,6 +50,8 @@ class Generator {
     _lineLength = pubspecConfig.lineLength ?? _defaultLineLength;
 
     _generateSystemCollections = pubspecConfig.generateSystemCollections ?? _defaultGenerateSystemCollections;
+
+    _generateRelationExpansions = pubspecConfig.generateRelationExpansions ?? _defaultGenerateRelationExpansions;
   }
 
   /// Generates collections models files.
@@ -87,6 +92,8 @@ class Generator {
       }
     }
 
+    final context = GeneratorContext(collections, _generateRelationExpansions);
+
     createFileAndWrite(
       path.join(outputDirectory.path, 'base_record.dart'),
       baseRecordClassGenerator(_lineLength),
@@ -109,11 +116,11 @@ class Generator {
     );
 
     for (var collection in collections) {
-      final fileName = '${ReCase(collection.name).snakeCase}_record';
+      final fileName = Collection.generateFileName(collection.name);
 
       createFileAndWrite(
         path.join(outputDirectory.path, '$fileName.dart'),
-        collection.generateClassCode(fileName, _lineLength),
+        collection.generateClassCode(fileName, _lineLength, context),
       );
     }
   }

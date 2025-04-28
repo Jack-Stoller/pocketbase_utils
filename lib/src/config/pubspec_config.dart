@@ -9,6 +9,7 @@ class PubspecConfig {
   String? _outputDir;
   int? _lineLength;
   bool? _generateSystemCollections;
+  bool? _generateRelationExpansions;
 
   bool? get enabled => _enabled;
 
@@ -19,6 +20,8 @@ class PubspecConfig {
   int? get lineLength => _lineLength;
 
   bool? get generateSystemCollections => _generateSystemCollections;
+
+  bool? get generateRelationExpansions => _generateRelationExpansions;
 
   PubspecConfig() {
     var pubspecFile = getPubspecFile();
@@ -46,6 +49,9 @@ class PubspecConfig {
     _lineLength = pocketbaseUtilsConfig['line_length'] is int ? pocketbaseUtilsConfig['line_length'] : null;
     _generateSystemCollections = pocketbaseUtilsConfig['generate_system_collections'] is bool
         ? pocketbaseUtilsConfig['generate_system_collections']
+        : null;
+    _generateRelationExpansions = pocketbaseUtilsConfig['generate_relation_expansions'] is bool
+        ? pocketbaseUtilsConfig['generate_relation_expansions']
         : null;
   }
 }

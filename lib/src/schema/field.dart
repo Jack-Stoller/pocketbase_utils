@@ -1,5 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:code_builder/code_builder.dart' as code_builder;
+import 'package:pocketbase_utils/src/generator/generator_context.dart';
+import 'package:pocketbase_utils/src/schema/collection/collection.dart';
 import 'package:pocketbase_utils/src/templates/date_time_json_methods.dart';
 import 'package:pocketbase_utils/src/utils/string_utils.dart';
 import 'package:pocketbase_utils/src/utils/utils.dart';
@@ -34,6 +36,7 @@ final class Field {
     this.max,
     this.onlyInt,
     this.required,
+    this.collectionId,
     this.id,
     this.values,
     this.hidden = false,
@@ -43,6 +46,7 @@ final class Field {
 
   final String? id;
   final String name;
+  final String? collectionId;
   final FieldType type;
   final bool? required;
   final int? maxSelect;
@@ -126,7 +130,22 @@ final class Field {
     });
   }
 
-  List<code_builder.Field> additionalFieldOptionsAsFields() {
+  List<code_builder.Directive> toImportDirective(GeneratorContext context) {
+    // If field is a relation, add import for the collection class
+    if (context.generateRelationExpansions && type == FieldType.relation && collectionId != null) {
+      return [
+        code_builder.Directive.import(
+          '${Collection.generateFileName(context.resolveCollectionName(collectionId!))}.dart',
+        ),
+      ];
+    }
+    return [];
+  }
+
+  List<code_builder.Field> additionalFieldOptionsAsFields(GeneratorContext context) {
+    // Locate all files that will need to be imported for relation fields
+    if (type == FieldType.relation && collectionId != null) {}
+
     return [
       if (min != null)
         code_builder.Field((f) => f
@@ -139,7 +158,22 @@ final class Field {
           ..static = true
           ..modifier = code_builder.FieldModifier.constant
           ..name = '${name}MaxValue'
-          ..assignment = code_builder.Code(max.toString()))
+          ..assignment = code_builder.Code(max.toString())),
+      // If field is a relation, add a expanded field for the expanded variant
+      if (context.generateRelationExpansions && type == FieldType.relation && collectionId != null) ...[
+        code_builder.Field((f) => f
+          ..name = '${nameInCamelCase}Expanded'
+            ..modifier = code_builder.FieldModifier.final$
+            ..type = maxSelect == 1
+              ? code_builder.TypeReference((t) => t
+                ..symbol = Collection.generateClassName(context.resolveCollectionName(collectionId!))
+                ..isNullable = true)
+              : code_builder.TypeReference((t) => t
+              ..symbol = 'List'
+              ..isNullable = true
+              ..types.add(
+                code_builder.refer(Collection.generateClassName(context.resolveCollectionName(collectionId!)), null)))),
+      ]
     ];
   }
 }
