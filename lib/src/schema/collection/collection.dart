@@ -18,6 +18,7 @@ part 'methods/props.dart';
 part 'methods/record_model_to_map.dart';
 part 'methods/take_diff.dart';
 part 'methods/to_json.dart';
+part 'methods/to_create_request.dart';
 
 enum CollectionType {
   /// [Read more](https://pocketbase.io/docs/collections/#auth-collection)
@@ -193,6 +194,7 @@ final class Collection {
         ])
         ..methods.addAll([
           _toJsonMethod(className),
+          _toCreateRequestMethod(className, allFieldsWithoutHidden),
           _recordModelToMapMethod(className, fieldsWithoutSuperFieldsAndHidden, context),
           _copyWithMethod(className, allFieldsWithoutHidden),
           _takeDiffMethod(className, allFieldsWithoutHidden),
